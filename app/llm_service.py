@@ -1,4 +1,5 @@
 import json
+import re
 from openai import OpenAI
 from app.config import OPENAI_API_KEY, OPENAI_MODEL
 
@@ -12,6 +13,10 @@ class LLMService:
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         self.model = OPENAI_MODEL
 
+
+    def _parse_json(self, output: str) -> dict:
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", output.strip(), flags=re.MULTILINE)
+        return json.loads(cleaned.strip())
 
     def summarize_text(self, text: str) -> str:
         prompt = f"""
@@ -57,9 +62,7 @@ Text:
             input=prompt
         )
 
-        output = response.output_text.strip()
-
-        return json.loads(output)
+        return self._parse_json(response.output_text)
 
 
     def extract_structured(self, text: str, schema_description: str) -> dict:
@@ -80,6 +83,4 @@ Text:
             input=prompt
         )
 
-        output = response.output_text.strip()
-
-        return json.loads(output)
+        return self._parse_json(response.output_text)
